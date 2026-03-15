@@ -17,31 +17,57 @@ struct WidgetView: View {
         .onReceive(timer) { _ in
             Task { await store.refresh() }
         }
-        .contextMenu {
-            Button("Refresh") {
-                Task { await store.refresh() }
-            }
-            Divider()
-            Button("Quit") {
-                NSApp.terminate(nil)
-            }
-        }
     }
 
     private var headerSection: some View {
-        HStack {
+        HStack(spacing: 6) {
             Text("LinkedIn")
                 .font(.headline)
                 .fontWeight(.bold)
+            if store.hiddenCount > 0 {
+                Button(
+                    action: { store.showHidden.toggle() },
+                    label: {
+                        Text("\(store.hiddenCount) hidden")
+                            .font(.caption2)
+                            .foregroundStyle(store.showHidden ? Color.blue : Color.secondary)
+                    }
+                )
+                .buttonStyle(.plain)
+            }
             Spacer()
             if let date = store.lastRefresh {
                 Text(date, style: .time)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            headerMenu
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+    }
+
+    private var headerMenu: some View {
+        Menu {
+            Button("Refresh") {
+                Task { await store.refresh() }
+            }
+            if store.hiddenCount > 0 {
+                Button("Unhide all (\(store.hiddenCount))") {
+                    store.unhideAll()
+                }
+            }
+            Divider()
+            Button("Quit") {
+                NSApp.terminate(nil)
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
     }
 
     private var searchField: some View {
@@ -94,7 +120,7 @@ struct WidgetView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(store.posts) { post in
-                        PostRow(post: post)
+                        PostRow(post: post, store: store)
                         if post.id != store.posts.last?.id {
                             Divider().padding(.leading, 12)
                         }

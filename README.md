@@ -2,23 +2,26 @@
 
 A native macOS desktop widget that shows your LinkedIn feed at a glance. Built with SwiftUI, powered by [`linkedin-cli`](https://github.com/sderosiaux/linkedin-cli).
 
-Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter. Just a translucent panel with your most relevant posts, ranked by engagement and recency.
+Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter. Just a translucent panel with your latest posts sorted by date.
 
 ![screenshot](screenshot.png)
 
 ## Features
 
-- **Fusion ranking** -- posts scored by `likes + comments*2 + recency_boost` (linear decay over 1 week)
+- **Sorted by date** -- most recent posts first, always
+- **Fresh indicator** -- green dot on posts less than 4 hours old
 - **Semantic search** -- uses Ollama embeddings for conceptual matching, with SQL fallback if Ollama is not running
-- **Search results by date** -- results always sorted most recent first, with similarity percentage shown for semantic matches
-- **Link indicator** -- posts containing URLs show a link icon
+- **Hover actions** on each post:
+  - **Read** -- mark as read (hides from feed, stored locally)
+  - **Not for me** -- hides + tells the CLI to filter similar content from future timelines (embedding-based)
+  - **More like this** -- finds semantically similar posts
 - **Click to open** -- click any post to open it in your browser
 - **Auto-refresh** -- updates every 5 minutes from local DB (no API calls)
-- **Resizable** -- drag the bottom-right corner to resize horizontally and vertically
+- **Resizable** -- drag the bottom-right corner to resize both axes
 - **Remembers position and size** across launches
 - **Translucent HUD** -- native macOS vibrancy material, rounded corners
 - **Desktop-level window** -- sits behind normal windows, visible on all Spaces
-- **Right-click** to manually refresh or quit
+- **Menu** -- ellipsis button in header for refresh, unhide all, quit
 - **SwiftLint enforced** -- strict linting with opt-in rules
 
 ## Prerequisites
@@ -27,7 +30,7 @@ Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter.
 - Swift 5.9+
 - [`linkedin-cli`](https://github.com/sderosiaux/linkedin-cli) installed via bun
 - A populated local database (`linkedin sync` run at least once)
-- [Ollama](https://ollama.com) with `nomic-embed-text` (optional, for semantic search)
+- [Ollama](https://ollama.com) with `nomic-embed-text` (optional, for semantic search and "Not for me" filtering)
 
 ## Install
 
@@ -35,44 +38,46 @@ Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter.
 git clone https://github.com/sderosiaux/linkedin-desktop-widget.git
 cd linkedin-desktop-widget
 swift build -c release
+cp .build/release/LinkedInWidget ~/.local/bin/
 ```
-
-The binary is at `.build/release/LinkedInWidget`.
 
 ## Usage
 
 ```bash
-# Run the widget
-.build/release/LinkedInWidget
-
-# Or install globally
-cp .build/release/LinkedInWidget ~/.local/bin/
+LinkedInWidget
 ```
 
 The widget appears in the top-right corner of your screen. Drag to reposition. Drag the bottom-right corner to resize.
 
-There is no Dock icon. Right-click the widget to quit, or use `pkill LinkedInWidget`.
+There is no Dock icon. Use the ellipsis menu to quit, or `pkill LinkedInWidget`.
 
 ### Search
 
-Type in the search bar to find posts. If Ollama is running with embeddings generated (`linkedin embed`), the widget uses semantic search to find conceptually related posts. Otherwise, it falls back to SQL text matching against post content, author names, and headlines.
+Type in the search bar to find posts. If Ollama is running with embeddings generated (`linkedin embed`), the widget uses semantic search to find conceptually related posts and shows a similarity percentage. Otherwise, it falls back to SQL text matching.
+
+### Post actions
+
+Hover any post to see action buttons:
+
+| Button | What it does | Where it's stored |
+|---|---|---|
+| **Read** | Hides the post from feed | Widget local file (`~/.local/share/linkedin-widget/hidden.json`) |
+| **Not for me** | Hides + filters similar content from future timelines | Widget local file + CLI SQLite (`disliked_post` table) |
+| **More like this** | Semantic search for similar posts | Fills the search bar |
 
 ### Keeping data fresh
 
-The widget reads from `linkedin-cli`'s local SQLite database. It never calls the LinkedIn API directly. To keep your data fresh, run `linkedin sync` periodically:
+The widget reads from `linkedin-cli`'s local SQLite database. It never calls the LinkedIn API directly. To keep your data fresh:
 
 ```bash
 # Manual sync
 linkedin sync
 
 # Or via cron (every 30 minutes)
-crontab -e
 */30 * * * * /Users/you/.bun/bin/linkedin sync
 ```
 
 ### Launch at login
-
-Add the built binary to **System Settings > General > Login Items**, or create a Launch Agent:
 
 ```bash
 cat > ~/Library/LaunchAgents/com.linkedin-widget.plist << 'EOF'
@@ -102,12 +107,12 @@ Package.swift              # SPM manifest, macOS 14+
 .swiftlint.yml             # Strict lint rules
 Sources/
   main.swift               # App entry point
-  AppDelegate.swift        # Window setup (borderless, translucent, desktop-level)
-  Models.swift             # Post model, ranking, date sorting
-  LinkedInService.swift    # Runs linkedin-cli, semantic + SQL search, caches results
-  WidgetStore.swift        # Observable state (posts, search query, refresh)
-  WidgetView.swift         # Main widget layout (header, search, post list)
-  PostRow.swift            # Individual post row with similarity badge
+  AppDelegate.swift        # Window setup, edit menu for Cmd shortcuts
+  Models.swift             # Post model, date sorting, recency detection
+  LinkedInService.swift    # Runs linkedin-cli, semantic + SQL search, dislike
+  WidgetStore.swift        # Observable state, hide/dislike, debounced search
+  WidgetView.swift         # Main layout (header, search, post list, menu)
+  PostRow.swift            # Post row with hover action buttons
   ResizableWindow.swift    # NSWindow subclass with corner resize
   ResizeHandle.swift       # Corner resize grip indicator
 ```

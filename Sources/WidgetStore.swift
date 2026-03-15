@@ -10,15 +10,51 @@ final class WidgetStore {
         didSet { scheduleSearch() }
     }
     var isSearching = false
+    var showHidden = false
+    private(set) var hiddenIds: Set<String> = []
+
+    private static let hiddenFile: URL = {
+        let dir = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/linkedin-widget")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("hidden.json")
+    }()
 
     var posts: [RankedPost] {
-        if searchQuery.isEmpty {
-            return allPosts
-        }
-        return searchResults ?? []
+        let source = searchQuery.isEmpty ? allPosts : (searchResults ?? [])
+        if showHidden { return source }
+        return source.filter { !hiddenIds.contains($0.id) }
     }
 
+    var hiddenCount: Int { hiddenIds.count }
+
     private var searchTask: Task<Void, Never>?
+
+    init() {
+        loadHidden()
+    }
+
+    func hidePost(_ id: String) {
+        hiddenIds.insert(id)
+        saveHidden()
+    }
+
+    func unhideAll() {
+        hiddenIds.removeAll()
+        saveHidden()
+    }
+
+    private func loadHidden() {
+        guard let data = try? Data(contentsOf: Self.hiddenFile),
+              let ids = try? JSONDecoder().decode(Set<String>.self, from: data)
+        else { return }
+        hiddenIds = ids
+    }
+
+    private func saveHidden() {
+        guard let data = try? JSONEncoder().encode(hiddenIds) else { return }
+        try? data.write(to: Self.hiddenFile)
+    }
 
     private func scheduleSearch() {
         searchTask?.cancel()
@@ -42,6 +78,13 @@ final class WidgetStore {
             guard !Task.isCancelled else { return }
             self.searchResults = results
             self.isSearching = false
+        }
+    }
+
+    func dislikePost(_ id: String) {
+        hidePost(id)
+        Task.detached {
+            LinkedInService.dislikePost(id)
         }
     }
 

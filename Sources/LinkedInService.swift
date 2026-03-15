@@ -49,6 +49,33 @@ enum LinkedInService {
         }
     }
 
+    private static func runCliNoOutput(_ arguments: String) {
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        let bunPath = "\(homeDir)/.bun/bin"
+
+        let process = Process()
+        var env = ProcessInfo.processInfo.environment
+        let currentPath = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        env["PATH"] = "\(bunPath):\(currentPath)"
+        process.environment = env
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-c", "\(bunPath)/linkedin \(arguments)"]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            log("cli: \(arguments) -> exit \(process.terminationStatus)")
+        } catch {
+            log("cli: \(arguments) -> \(error)")
+        }
+    }
+
+    static func dislikePost(_ postId: String) {
+        runCliNoOutput("dislike \(postId)")
+    }
+
     static func fetchTopPosts() -> [RankedPost] {
         guard let data = runCli("timeline --json -n 50 --min 0") else {
             log("timeline: failed, returning cached (\(cachedPosts.count))")
@@ -61,7 +88,7 @@ enum LinkedInService {
             log("timeline: decoded \(posts.count) posts")
             let ranked = posts
                 .map { RankedPost(from: $0) }
-                .sorted { $0.score > $1.score }
+                .sortedByDate()
             cachedPosts = ranked
             return ranked
         } catch {

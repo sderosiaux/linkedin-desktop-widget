@@ -65,6 +65,10 @@ struct RankedPost: Identifiable {
         }
     }
 
+    var isRecent: Bool {
+        timeAgoHours < 4
+    }
+
     var hasLink: Bool {
         text.contains("https://") || text.contains("http://")
     }

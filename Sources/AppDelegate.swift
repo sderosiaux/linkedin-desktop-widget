@@ -57,5 +57,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         window.orderFront(nil)
+
+        setupEditMenu()
+    }
+
+    private func setupEditMenu() {
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+
+        let editItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        editItem.submenu = editMenu
+
+        let mainMenu = NSMenu()
+        mainMenu.addItem(editItem)
+        NSApp.mainMenu = mainMenu
     }
 }

@@ -2,18 +2,16 @@ import SwiftUI
 
 struct PostRow: View {
     let post: RankedPost
+    let store: WidgetStore
     @State private var isHovered = false
 
     var body: some View {
-        Button(
-            action: {
-                if let url = post.postURL {
-                    NSWorkspace.shared.open(url)
-                }
-            },
-            label: { postContent }
-        )
-        .buttonStyle(.plain)
+        ZStack(alignment: .topTrailing) {
+            postContent
+            if isHovered {
+                hoverActions
+            }
+        }
         .background(isHovered ? Color.primary.opacity(0.05) : Color.clear)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -23,21 +21,36 @@ struct PostRow: View {
     }
 
     private var postContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            postHeader
-            Text(post.displayText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-            postStats
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
+        Button(
+            action: {
+                if let url = post.postURL {
+                    NSWorkspace.shared.open(url)
+                }
+            },
+            label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    postHeader
+                    Text(post.displayText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                    postStats
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
+            }
+        )
+        .buttonStyle(.plain)
     }
 
     private var postHeader: some View {
-        HStack {
+        HStack(spacing: 4) {
+            if post.isRecent {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 6, height: 6)
+            }
             Text(post.actorName)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -67,5 +80,35 @@ struct PostRow: View {
         }
         .font(.caption2)
         .foregroundStyle(.tertiary)
+    }
+
+    private var hoverActions: some View {
+        HStack(spacing: 4) {
+            hoverButton("Read") {
+                store.hidePost(post.id)
+            }
+            hoverButton("Not for me") {
+                store.dislikePost(post.id)
+            }
+            hoverButton("More like this") {
+                store.searchQuery = post.displayText.prefix(80).description
+            }
+        }
+        .padding(4)
+    }
+
+    private func hoverButton(
+        _ label: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.caption2)
+                .fontWeight(.medium)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
     }
 }
