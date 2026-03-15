@@ -4,8 +4,8 @@ import Observation
 @Observable
 final class WidgetStore {
     var allPosts: [RankedPost] = []
-    var searchResults: [RankedPost]? = nil
-    var lastRefresh: Date? = nil
+    var searchResults: [RankedPost]?
+    var lastRefresh: Date?
     var searchQuery: String = "" {
         didSet { scheduleSearch() }
     }

@@ -6,12 +6,13 @@ enum LinkedInService {
 
     private static func log(_ msg: String) {
         let line = "\(Date()): \(msg)\n"
+        guard let data = line.data(using: .utf8) else { return }
         if let fh = try? FileHandle(forWritingTo: logFile) {
             fh.seekToEndOfFile()
-            fh.write(line.data(using: .utf8)!)
+            fh.write(data)
             fh.closeFile()
         } else {
-            FileManager.default.createFile(atPath: logFile.path, contents: line.data(using: .utf8))
+            FileManager.default.createFile(atPath: logFile.path, contents: data)
         }
     }
 
@@ -20,8 +21,10 @@ enum LinkedInService {
     private static func runCli(_ arguments: String) -> Data? {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
         let bunPath = "\(homeDir)/.bun/bin"
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let rand = Int.random(in: 0...999_999)
         let tmpFile = FileManager.default.temporaryDirectory
-            .appendingPathComponent("linkedin-widget-\(ProcessInfo.processInfo.processIdentifier)-\(Int.random(in: 0...999999)).json")
+            .appendingPathComponent("linkedin-widget-\(pid)-\(rand).json")
 
         var env = ProcessInfo.processInfo.environment
         let currentPath = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
@@ -68,6 +71,29 @@ enum LinkedInService {
     }
 
     static func searchPosts(query: String) -> [RankedPost] {
+        let semantic = semanticSearch(query: query)
+        if !semantic.isEmpty { return semantic }
+        return sqlSearch(query: query)
+    }
+
+    private static func semanticSearch(query: String) -> [RankedPost] {
+        let escaped = query.replacingOccurrences(of: "\"", with: "\\\"")
+        guard let data = runCli("similar \"\(escaped)\" --json -n 30") else {
+            log("semantic: failed for '\(query)'")
+            return []
+        }
+
+        do {
+            let posts = try JSONDecoder().decode([LinkedInPost].self, from: data)
+            log("semantic: '\(query)' -> \(posts.count) results")
+            return posts.map { RankedPost(from: $0) }.sortedByDate()
+        } catch {
+            log("semantic: \(error)")
+            return []
+        }
+    }
+
+    private static func sqlSearch(query: String) -> [RankedPost] {
         let escaped = query.replacingOccurrences(of: "'", with: "''")
         let sql = """
         SELECT p.id, \
@@ -82,23 +108,21 @@ enum LinkedInService {
         WHERE p.text LIKE '%\(escaped)%' \
         OR a.first_name || ' ' || a.last_name LIKE '%\(escaped)%' \
         OR a.headline LIKE '%\(escaped)%' \
-        ORDER BY p.likes + p.comments_count * 2 DESC \
+        ORDER BY p.posted_at DESC \
         LIMIT 50
         """
 
         guard let data = runCli("db \"\(sql)\"") else {
-            log("search: failed for '\(query)'")
+            log("sql search: failed for '\(query)'")
             return []
         }
 
         do {
             let posts = try JSONDecoder().decode([LinkedInPost].self, from: data)
-            log("search: '\(query)' -> \(posts.count) results")
-            return posts
-                .map { RankedPost(from: $0) }
-                .sorted { $0.score > $1.score }
+            log("sql search: '\(query)' -> \(posts.count) results")
+            return posts.map { RankedPost(from: $0) }
         } catch {
-            log("search: \(error)")
+            log("sql search: \(error)")
             return []
         }
     }

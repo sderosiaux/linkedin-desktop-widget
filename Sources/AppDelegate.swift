@@ -35,8 +35,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         window.contentView = visualEffect
-        window.minSize = NSSize(width: 320, height: 200)
-        window.maxSize = NSSize(width: 320, height: 1200)
+        window.minSize = NSSize(width: 260, height: 200)
+        window.maxSize = NSSize(width: 600, height: 1200)
         window.acceptsMouseMovedEvents = true
         window.isOpaque = false
         window.backgroundColor = .clear
@@ -44,7 +44,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)) + 1)
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         window.isMovableByWindowBackground = true
-        (window as! ResizableWindow).addResizeBar()
+        if let resizable = window as? ResizableWindow {
+            resizable.addResizeCorner()
+        }
         window.setFrameAutosaveName("LinkedInWidget")
 
         if !window.setFrameUsingName("LinkedInWidget") {

@@ -9,15 +9,17 @@ Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter.
 ## Features
 
 - **Fusion ranking** -- posts scored by `likes + comments*2 + recency_boost` (linear decay over 1 week)
-- **Search filter** -- filter by author name, company, or keyword across all post content
+- **Semantic search** -- uses Ollama embeddings for conceptual matching, with SQL fallback if Ollama is not running
+- **Search results by date** -- results always sorted most recent first, with similarity percentage shown for semantic matches
 - **Link indicator** -- posts containing URLs show a link icon
 - **Click to open** -- click any post to open it in your browser
 - **Auto-refresh** -- updates every 5 minutes from local DB (no API calls)
-- **Resizable** -- drag the bottom handle to resize vertically
+- **Resizable** -- drag the bottom-right corner to resize horizontally and vertically
 - **Remembers position and size** across launches
 - **Translucent HUD** -- native macOS vibrancy material, rounded corners
 - **Desktop-level window** -- sits behind normal windows, visible on all Spaces
 - **Right-click** to manually refresh or quit
+- **SwiftLint enforced** -- strict linting with opt-in rules
 
 ## Prerequisites
 
@@ -25,6 +27,7 @@ Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter.
 - Swift 5.9+
 - [`linkedin-cli`](https://github.com/sderosiaux/linkedin-cli) installed via bun
 - A populated local database (`linkedin sync` run at least once)
+- [Ollama](https://ollama.com) with `nomic-embed-text` (optional, for semantic search)
 
 ## Install
 
@@ -42,13 +45,17 @@ The binary is at `.build/release/LinkedInWidget`.
 # Run the widget
 .build/release/LinkedInWidget
 
-# Or from debug build
-swift run
+# Or install globally
+cp .build/release/LinkedInWidget ~/.local/bin/
 ```
 
-The widget appears in the top-right corner of your screen. Drag to reposition. Drag the bottom handle to resize.
+The widget appears in the top-right corner of your screen. Drag to reposition. Drag the bottom-right corner to resize.
 
 There is no Dock icon. Right-click the widget to quit, or use `pkill LinkedInWidget`.
+
+### Search
+
+Type in the search bar to find posts. If Ollama is running with embeddings generated (`linkedin embed`), the widget uses semantic search to find conceptually related posts. Otherwise, it falls back to SQL text matching against post content, author names, and headlines.
 
 ### Keeping data fresh
 
@@ -92,16 +99,17 @@ launchctl load ~/Library/LaunchAgents/com.linkedin-widget.plist
 
 ```
 Package.swift              # SPM manifest, macOS 14+
+.swiftlint.yml             # Strict lint rules
 Sources/
   main.swift               # App entry point
   AppDelegate.swift        # Window setup (borderless, translucent, desktop-level)
-  Models.swift             # Post model, ranking, search matching
-  LinkedInService.swift    # Runs linkedin-cli, parses JSON, caches results
+  Models.swift             # Post model, ranking, date sorting
+  LinkedInService.swift    # Runs linkedin-cli, semantic + SQL search, caches results
   WidgetStore.swift        # Observable state (posts, search query, refresh)
   WidgetView.swift         # Main widget layout (header, search, post list)
-  PostRow.swift            # Individual post row
-  ResizableWindow.swift    # NSWindow subclass with bottom-edge resize
-  ResizeHandle.swift       # Visible drag handle view
+  PostRow.swift            # Individual post row with similarity badge
+  ResizableWindow.swift    # NSWindow subclass with corner resize
+  ResizeHandle.swift       # Corner resize grip indicator
 ```
 
 ## License
