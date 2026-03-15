@@ -4,6 +4,8 @@ A native macOS desktop widget that shows your LinkedIn feed at a glance. Built w
 
 Floats on your desktop like a weather widget. No Dock icon, no menu bar clutter. Just a translucent panel with your most relevant posts, ranked by engagement and recency.
 
+![screenshot](screenshot.png)
+
 ## Features
 
 - **Fusion ranking** -- posts scored by `likes + comments*2 + recency_boost` (linear decay over 1 week)
