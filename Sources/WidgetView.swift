@@ -48,11 +48,17 @@ struct WidgetView: View {
             Divider()
 
             // Posts
-            if store.posts.isEmpty {
+            if store.isSearching {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(maxWidth: .infinity)
+                Spacer()
+            } else if store.posts.isEmpty {
                 Spacer()
                 Text(store.allPosts.isEmpty
                      ? "No posts yet.\nRun: linkedin sync"
-                     : "No posts match this filter.")
+                     : "No matches in DB.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

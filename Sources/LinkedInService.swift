@@ -17,11 +17,11 @@ enum LinkedInService {
 
     private static var cachedPosts: [RankedPost] = []
 
-    static func fetchTopPosts() -> [RankedPost] {
+    private static func runCli(_ arguments: String) -> Data? {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
         let bunPath = "\(homeDir)/.bun/bin"
         let tmpFile = FileManager.default.temporaryDirectory
-            .appendingPathComponent("linkedin-widget-\(ProcessInfo.processInfo.processIdentifier).json")
+            .appendingPathComponent("linkedin-widget-\(ProcessInfo.processInfo.processIdentifier)-\(Int.random(in: 0...999999)).json")
 
         var env = ProcessInfo.processInfo.environment
         let currentPath = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
@@ -30,31 +30,76 @@ enum LinkedInService {
         let process = Process()
         process.environment = env
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-c", "\(bunPath)/linkedin timeline --json -n 50 --min 0 > \(tmpFile.path)"]
+        process.arguments = ["-c", "\(bunPath)/linkedin \(arguments) > \(tmpFile.path)"]
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
 
         do {
             try process.run()
             process.waitUntilExit()
-
             let data = try Data(contentsOf: tmpFile)
             try? FileManager.default.removeItem(at: tmpFile)
+            return data
+        } catch {
+            try? FileManager.default.removeItem(at: tmpFile)
+            return nil
+        }
+    }
 
-            log("exit=\(process.terminationStatus) file=\(data.count)b")
+    static func fetchTopPosts() -> [RankedPost] {
+        guard let data = runCli("timeline --json -n 50 --min 0") else {
+            log("timeline: failed, returning cached (\(cachedPosts.count))")
+            return cachedPosts
+        }
 
+        do {
+            log("timeline: \(data.count)b")
             let posts = try JSONDecoder().decode([LinkedInPost].self, from: data)
-            log("decoded \(posts.count) posts")
-
+            log("timeline: decoded \(posts.count) posts")
             let ranked = posts
                 .map { RankedPost(from: $0) }
                 .sorted { $0.score > $1.score }
             cachedPosts = ranked
             return ranked
         } catch {
-            try? FileManager.default.removeItem(at: tmpFile)
-            log("error: \(error), returning cached (\(cachedPosts.count) posts)")
+            log("timeline: \(error), returning cached (\(cachedPosts.count))")
             return cachedPosts
+        }
+    }
+
+    static func searchPosts(query: String) -> [RankedPost] {
+        let escaped = query.replacingOccurrences(of: "'", with: "''")
+        let sql = """
+        SELECT p.id, \
+        a.first_name || ' ' || a.last_name AS actorName, \
+        COALESCE(a.headline, '') AS actorHeadline, \
+        p.text, p.likes, \
+        p.comments_count AS comments, \
+        p.shares, \
+        COALESCE(p.time_ago, '') AS timeAgo \
+        FROM post p \
+        JOIN author a ON p.author_urn = a.urn \
+        WHERE p.text LIKE '%\(escaped)%' \
+        OR a.first_name || ' ' || a.last_name LIKE '%\(escaped)%' \
+        OR a.headline LIKE '%\(escaped)%' \
+        ORDER BY p.likes + p.comments_count * 2 DESC \
+        LIMIT 50
+        """
+
+        guard let data = runCli("db \"\(sql)\"") else {
+            log("search: failed for '\(query)'")
+            return []
+        }
+
+        do {
+            let posts = try JSONDecoder().decode([LinkedInPost].self, from: data)
+            log("search: '\(query)' -> \(posts.count) results")
+            return posts
+                .map { RankedPost(from: $0) }
+                .sorted { $0.score > $1.score }
+        } catch {
+            log("search: \(error)")
+            return []
         }
     }
 }
