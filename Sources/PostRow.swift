@@ -31,7 +31,7 @@ struct PostRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     postHeader
                     Text(post.displayText)
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                     postStats
@@ -49,20 +49,20 @@ struct PostRow: View {
             if post.isRecent {
                 Circle()
                     .fill(Color.green)
-                    .frame(width: 6, height: 6)
+                    .frame(width: 7, height: 7)
             }
             Text(post.actorName)
-                .font(.subheadline)
+                .font(.body)
                 .fontWeight(.semibold)
                 .lineLimit(1)
             Spacer()
             if post.hasLink {
                 Image(systemName: "link")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.tertiary)
             }
             Text(post.timeAgo)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
     }
@@ -74,11 +74,11 @@ struct PostRow: View {
             if let sim = post.similarity {
                 Spacer()
                 Text("\(Int(sim * 100))%")
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.blue.opacity(0.7))
             }
         }
-        .font(.caption2)
+        .font(.caption)
         .foregroundStyle(.tertiary)
     }
 
@@ -103,7 +103,7 @@ struct PostRow: View {
     ) -> some View {
         Button(action: action) {
             Text(label)
-                .font(.caption2)
+                .font(.caption)
                 .fontWeight(.medium)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)

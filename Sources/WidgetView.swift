@@ -22,14 +22,14 @@ struct WidgetView: View {
     private var headerSection: some View {
         HStack(spacing: 6) {
             Text("LinkedIn")
-                .font(.headline)
+                .font(.title3)
                 .fontWeight(.bold)
             if store.hiddenCount > 0 {
                 Button(
                     action: { store.showHidden.toggle() },
                     label: {
                         Text("\(store.hiddenCount) hidden")
-                            .font(.caption2)
+                            .font(.subheadline)
                             .foregroundStyle(store.showHidden ? Color.blue : Color.secondary)
                     }
                 )
@@ -38,7 +38,7 @@ struct WidgetView: View {
             Spacer()
             if let date = store.lastRefresh {
                 Text(date, style: .time)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             headerMenu
@@ -63,7 +63,7 @@ struct WidgetView: View {
             }
         } label: {
             Image(systemName: "ellipsis.circle")
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
@@ -73,20 +73,20 @@ struct WidgetView: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
             TextField("Filter by name, company, keyword...", text: Binding(
                 get: { store.searchQuery },
                 set: { store.searchQuery = $0 }
             ))
             .textFieldStyle(.plain)
-            .font(.caption)
+            .font(.subheadline)
             if !store.searchQuery.isEmpty {
                 Button(
                     action: { store.searchQuery = "" },
                     label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(.tertiary)
                     }
                 )
@@ -111,7 +111,7 @@ struct WidgetView: View {
             Text(store.allPosts.isEmpty
                  ? "No posts yet.\nRun: linkedin sync"
                  : "No matches in DB.")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
