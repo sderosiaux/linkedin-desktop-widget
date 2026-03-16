@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PostRow: View {
     let post: RankedPost
-    let store: WidgetStore
+    @ObservedObject var store: WidgetStore
     @State private var isHovered = false
 
     var body: some View {

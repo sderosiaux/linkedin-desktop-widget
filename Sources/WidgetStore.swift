@@ -1,17 +1,16 @@
+import Combine
 import Foundation
-import Observation
 
-@Observable
-final class WidgetStore {
-    var allPosts: [RankedPost] = []
-    var searchResults: [RankedPost]?
-    var lastRefresh: Date?
-    var searchQuery: String = "" {
+final class WidgetStore: ObservableObject {
+    @Published var allPosts: [RankedPost] = []
+    @Published var searchResults: [RankedPost]?
+    @Published var lastRefresh: Date?
+    @Published var searchQuery: String = "" {
         didSet { scheduleSearch() }
     }
-    var isSearching = false
-    var showHidden = false
-    private(set) var hiddenIds: Set<String> = []
+    @Published var isSearching = false
+    @Published var showHidden = false
+    @Published var hiddenIds: Set<String> = []
 
     private static let hiddenFile: URL = {
         let dir = FileManager.default.homeDirectoryForCurrentUser

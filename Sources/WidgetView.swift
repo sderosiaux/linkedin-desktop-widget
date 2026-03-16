@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WidgetView: View {
-    let store: WidgetStore
+    @ObservedObject var store: WidgetStore
     let timer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -75,12 +75,9 @@ struct WidgetView: View {
             Image(systemName: "magnifyingglass")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
-            TextField("Filter by name, company, keyword...", text: Binding(
-                get: { store.searchQuery },
-                set: { store.searchQuery = $0 }
-            ))
-            .textFieldStyle(.plain)
-            .font(.subheadline)
+            TextField("Filter by name, company, keyword...", text: $store.searchQuery)
+                .textFieldStyle(.plain)
+                .font(.subheadline)
             if !store.searchQuery.isEmpty {
                 Button(
                     action: { store.searchQuery = "" },
