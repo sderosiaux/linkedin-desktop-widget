@@ -21,27 +21,22 @@ struct PostRow: View {
     }
 
     private var postContent: some View {
-        Button(
-            action: {
-                if let url = post.postURL {
-                    NSWorkspace.shared.open(url)
-                }
-            },
-            label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    postHeader
-                    Text(post.displayText)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                    postStats
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 4) {
+            postHeader
+            Text(post.displayText)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+            postStats
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let url = post.postURL {
+                NSWorkspace.shared.open(url)
             }
-        )
-        .buttonStyle(.plain)
+        }
     }
 
     private var postHeader: some View {
@@ -85,10 +80,14 @@ struct PostRow: View {
     private var hoverActions: some View {
         HStack(spacing: 4) {
             hoverButton("Read") {
-                store.hidePost(post.id)
+                withAnimation(.easeOut(duration: 0.25)) {
+                    store.hidePost(post.id)
+                }
             }
             hoverButton("Not for me") {
-                store.dislikePost(post.id)
+                withAnimation(.easeOut(duration: 0.25)) {
+                    store.dislikePost(post.id)
+                }
             }
             hoverButton("More like this") {
                 store.searchQuery = post.displayText.prefix(80).description

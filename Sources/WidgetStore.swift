@@ -12,6 +12,7 @@ final class WidgetStore: ObservableObject {
     @Published var showHidden = false
     @Published var hiddenIds: Set<String> = []
 
+
     private static let hiddenFile: URL = {
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".local/share/linkedin-widget")

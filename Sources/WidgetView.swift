@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct WidgetView: View {
-    @ObservedObject var store: WidgetStore
+    @StateObject var store: WidgetStore
     let timer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
+
+    init(store: WidgetStore) {
+        _store = StateObject(wrappedValue: store)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -118,9 +122,8 @@ struct WidgetView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(store.posts) { post in
                         PostRow(post: post, store: store)
-                        if post.id != store.posts.last?.id {
-                            Divider().padding(.leading, 12)
-                        }
+                            .transition(.opacity.combined(with: .move(edge: .leading)))
+                        Divider().padding(.leading, 12)
                     }
                 }
             }
