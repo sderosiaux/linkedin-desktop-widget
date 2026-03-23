@@ -72,28 +72,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem?.button else { return }
         button.action = #selector(toggleWindow)
         button.target = self
-        updateStatusButton(button, count: 0)
+        updateStatusButton(button, unread: 0)
 
-        cancellable = store.$allPosts
+        cancellable = Publishers.CombineLatest(store.$allPosts, store.$hiddenIds)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] posts in
+            .sink { [weak self] posts, hidden in
                 guard let button = self?.statusItem?.button else { return }
-                self?.updateStatusButton(button, count: posts.count)
+                let unread = posts.filter { !hidden.contains($0.id) }.count
+                self?.updateStatusButton(button, unread: unread)
             }
     }
 
-    private func updateStatusButton(_ button: NSStatusBarButton, count: Int) {
+    private func updateStatusButton(_ button: NSStatusBarButton, unread: Int) {
         let result = NSMutableAttributedString()
         result.append(NSAttributedString(string: "LinkedIn ", attributes: [
             .foregroundColor: NSColor.labelColor,
             .font: NSFont.systemFont(ofSize: 11, weight: .medium),
         ]))
-        let countText = count > 0 ? "\(count)" : "●"
-        let color: NSColor = count > 0 ? .systemBlue : .secondaryLabelColor
-        result.append(NSAttributedString(string: countText, attributes: [
-            .foregroundColor: color,
-            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
-        ]))
+        if unread > 0 {
+            result.append(NSAttributedString(string: "\(unread)", attributes: [
+                .foregroundColor: NSColor.systemBlue,
+                .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
+            ]))
+        } else {
+            result.append(NSAttributedString(string: "●", attributes: [
+                .foregroundColor: NSColor.systemGreen,
+                .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+            ]))
+        }
         button.attributedTitle = result
     }
 
