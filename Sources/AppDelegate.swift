@@ -1,9 +1,12 @@
 import AppKit
+import Combine
 import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     let store = WidgetStore()
+    private var statusItem: NSStatusItem?
+    private var cancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -59,7 +62,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.orderFront(nil)
 
         setupEditMenu()
+        setupStatusBar()
     }
+
+    // MARK: - Status bar
+
+    private func setupStatusBar() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        guard let button = statusItem?.button else { return }
+        button.action = #selector(toggleWindow)
+        button.target = self
+        updateStatusButton(button, count: 0)
+
+        cancellable = store.$allPosts
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] posts in
+                guard let button = self?.statusItem?.button else { return }
+                self?.updateStatusButton(button, count: posts.count)
+            }
+    }
+
+    private func updateStatusButton(_ button: NSStatusBarButton, count: Int) {
+        let result = NSMutableAttributedString()
+        result.append(NSAttributedString(string: "LinkedIn ", attributes: [
+            .foregroundColor: NSColor.labelColor,
+            .font: NSFont.systemFont(ofSize: 11, weight: .medium),
+        ]))
+        let countText = count > 0 ? "\(count)" : "●"
+        let color: NSColor = count > 0 ? .systemBlue : .secondaryLabelColor
+        result.append(NSAttributedString(string: countText, attributes: [
+            .foregroundColor: color,
+            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
+        ]))
+        button.attributedTitle = result
+    }
+
+    @objc private func toggleWindow() {
+        if window.isVisible {
+            window.orderOut(nil)
+        } else {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    // MARK: - Edit menu
 
     private func setupEditMenu() {
         let editMenu = NSMenu(title: "Edit")
