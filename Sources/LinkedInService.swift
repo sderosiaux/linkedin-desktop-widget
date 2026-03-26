@@ -86,9 +86,14 @@ enum LinkedInService {
             log("timeline: \(data.count)b")
             let posts = try JSONDecoder().decode([LinkedInPost].self, from: data)
             log("timeline: decoded \(posts.count) posts")
+            var seen = Set<String>()
             let ranked = posts
                 .map { RankedPost(from: $0) }
                 .sortedByDate()
+                .filter { post in
+                    let key = "\(post.actorName)|\(post.text.prefix(100))"
+                    return seen.insert(key).inserted
+                }
             cachedPosts = ranked
             return ranked
         } catch {
