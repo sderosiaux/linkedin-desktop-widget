@@ -1,12 +1,8 @@
 import SwiftUI
 
 struct WidgetView: View {
-    @StateObject var store: WidgetStore
+    @ObservedObject var store: WidgetStore
     let timer = Timer.publish(every: 300, on: .main, in: .common).autoconnect()
-
-    init(store: WidgetStore) {
-        _store = StateObject(wrappedValue: store)
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {

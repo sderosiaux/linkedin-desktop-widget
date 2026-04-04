@@ -74,11 +74,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         button.target = self
         updateStatusButton(button, unread: 0)
 
-        cancellable = Publishers.CombineLatest(store.$allPosts, store.$hiddenIds)
+        cancellable = Publishers.CombineLatest(store.$allPosts, store.$hiddenKeys)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] posts, hidden in
                 guard let button = self?.statusItem?.button else { return }
-                let unread = posts.filter { !hidden.contains($0.id) }.count
+                let unread = posts.filter { !hidden.contains($0.contentKey) }.count
                 self?.updateStatusButton(button, unread: unread)
             }
     }

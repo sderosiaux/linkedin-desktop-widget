@@ -86,6 +86,10 @@ struct RankedPost: Identifiable {
         Self.parseTimeAgoToHours(timeAgo)
     }
 
+    var contentKey: String {
+        "\(actorName)|\(text.prefix(100))"
+    }
+
     func matchesSearch(_ term: String) -> Bool {
         if term.isEmpty { return true }
         let lowered = term.lowercased()

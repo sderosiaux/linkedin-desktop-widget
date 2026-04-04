@@ -81,12 +81,12 @@ struct PostRow: View {
         HStack(spacing: 4) {
             hoverButton("Read") {
                 withAnimation(.easeOut(duration: 0.25)) {
-                    store.hidePost(post.id)
+                    store.hidePost(post)
                 }
             }
             hoverButton("Not for me") {
                 withAnimation(.easeOut(duration: 0.25)) {
-                    store.dislikePost(post.id)
+                    store.dislikePost(post)
                 }
             }
             hoverButton("More like this") {

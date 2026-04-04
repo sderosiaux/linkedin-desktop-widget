@@ -10,7 +10,7 @@ final class WidgetStore: ObservableObject {
     }
     @Published var isSearching = false
     @Published var showHidden = false
-    @Published var hiddenIds: Set<String> = []
+    @Published var hiddenKeys: Set<String> = []
 
 
     private static let hiddenFile: URL = {
@@ -23,10 +23,10 @@ final class WidgetStore: ObservableObject {
     var posts: [RankedPost] {
         let source = searchQuery.isEmpty ? allPosts : (searchResults ?? [])
         if showHidden { return source }
-        return source.filter { !hiddenIds.contains($0.id) }
+        return source.filter { !hiddenKeys.contains($0.contentKey) }
     }
 
-    var hiddenCount: Int { hiddenIds.count }
+    var hiddenCount: Int { hiddenKeys.count }
 
     private var searchTask: Task<Void, Never>?
 
@@ -34,25 +34,26 @@ final class WidgetStore: ObservableObject {
         loadHidden()
     }
 
-    func hidePost(_ id: String) {
-        hiddenIds.insert(id)
+    func hidePost(_ post: RankedPost) {
+        hiddenKeys.insert(post.contentKey)
         saveHidden()
     }
 
     func unhideAll() {
-        hiddenIds.removeAll()
+        hiddenKeys.removeAll()
         saveHidden()
     }
 
     private func loadHidden() {
-        guard let data = try? Data(contentsOf: Self.hiddenFile),
-              let ids = try? JSONDecoder().decode(Set<String>.self, from: data)
-        else { return }
-        hiddenIds = ids
+        guard let data = try? Data(contentsOf: Self.hiddenFile) else { return }
+        // Support both old format (Set<String> of IDs) and new format (Set<String> of content keys)
+        if let keys = try? JSONDecoder().decode(Set<String>.self, from: data) {
+            hiddenKeys = keys
+        }
     }
 
     private func saveHidden() {
-        guard let data = try? JSONEncoder().encode(hiddenIds) else { return }
+        guard let data = try? JSONEncoder().encode(hiddenKeys) else { return }
         try? data.write(to: Self.hiddenFile)
     }
 
@@ -81,10 +82,10 @@ final class WidgetStore: ObservableObject {
         }
     }
 
-    func dislikePost(_ id: String) {
-        hidePost(id)
+    func dislikePost(_ post: RankedPost) {
+        hidePost(post)
         Task.detached {
-            LinkedInService.dislikePost(id)
+            LinkedInService.dislikePost(post.id)
         }
     }
 
