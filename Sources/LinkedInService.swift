@@ -77,7 +77,7 @@ enum LinkedInService {
     }
 
     static func fetchTopPosts() -> [RankedPost] {
-        guard let data = runCli("timeline --json -n 50 --min 0") else {
+        guard let data = runCli("timeline --json -n 500 --min 0") else {
             log("timeline: failed, returning cached (\(cachedPosts.count))")
             return cachedPosts
         }

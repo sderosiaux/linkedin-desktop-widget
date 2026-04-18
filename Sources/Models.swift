@@ -73,6 +73,14 @@ struct RankedPost: Identifiable {
         text.contains("https://") || text.contains("http://")
     }
 
+    var isLowValue: Bool {
+        let stripped = text.replacingOccurrences(
+            of: #"https?://\S+"#, with: "", options: .regularExpression
+        )
+        let wordCount = stripped.split(whereSeparator: { $0.isWhitespace }).count
+        return wordCount < 5
+    }
+
     var displayText: String {
         text.replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "  ", with: " ")

@@ -22,8 +22,8 @@ final class WidgetStore: ObservableObject {
 
     var posts: [RankedPost] {
         let source = searchQuery.isEmpty ? allPosts : (searchResults ?? [])
-        if showHidden { return source }
-        return source.filter { !hiddenKeys.contains($0.contentKey) }
+        let visible = showHidden ? source : source.filter { !hiddenKeys.contains($0.contentKey) && !$0.isLowValue }
+        return searchQuery.isEmpty ? Array(visible.prefix(50)) : visible
     }
 
     var hiddenCount: Int { hiddenKeys.count }
