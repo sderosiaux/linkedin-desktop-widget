@@ -13,6 +13,7 @@ struct PostRow: View {
             }
         }
         .background(isHovered ? Color.primary.opacity(0.05) : Color.clear)
+        .opacity(post.timeAgoHours >= 24 ? 0.45 : 1.0)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
